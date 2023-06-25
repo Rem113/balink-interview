@@ -7,7 +7,7 @@ export default {
         const page = filters?.page || 1
         const offset = filters?.offset || 0
         const fields = filters?.fields
-        await Order.find({createdBy: userId}, fields, { skip: offset * page, limit: 10 })
+        return await Order.find({createdBy: userId}, fields, { skip: offset * page, limit: 10 })
     },
     updateById: async (orderId, status) => await Order.updateOne({_id: orderId}, {status}),
     deleteById: async orderId => await Order.deleteOne({_id: orderId})
