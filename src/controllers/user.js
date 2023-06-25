@@ -1,52 +1,38 @@
 import UserService from '../services/user.js'
+import BadRequestException from '../utils/error/BadRequestException.js'
+import withErrorBoundary from '../utils/error/withErrorBoundary.js';
 
-const validateUserParams = (email, password) => {
-    const errors = {}
+// When we open the file, we need to look at the main module of the file at the 1st glance.
+// Utilitaries like your validateUserParams() function can be found below the main module.
 
-    if (!email || email.trim().length === 0) {
-        errors.email = 'Email required'
-    }
-
-    if (!password || password.trim().length === 0) {
-        errors.password = 'Password required'
-    }
-
-    return errors
-}
 
 export default {
-    register: async (req, res) => {
-        const { email, password } = req.body
+	register: withErrorBoundary(async ({ email, password }, response) => {
+		validateUserParams(email, password);
 
-        const errors = validateUserParams(email, password)
+		console.log("Creating new user with email:", email)
+		const newUser = await UserService.register({ email, password });
 
-        if (errors.email) return res.status(400).json({ error: errors.email })
-        if (errors.password) return res.status(400).json({ error: errors.password })
+		return response.status(201)
+			.json(newUser);
+	}),
 
-        try {
-            console.log("Creating new user with email:", email)
-            const newUser = await UserService.register({ email, password })
-            return res.status(201).json(newUser)
-        } catch (error) {
-            console.error("Could not create new user, reason:", error.message)
-            return res.status(500).json({ error: 'Could not create new user' })
-        }
-    },
-    login: async (req, res) => {
-        const { email, password } = req.body
+	login: withErrorBoundary(async ({ email, password }) => {
+		validateUserParams(email, password);
 
-        const errors = validateUserParams(email, password)
+		console.log("Logging in user with email:", email);
+		const token = await UserService.login({ email, password });
+		return res.status(200).json({ token });
+	}),
+}
 
-        if (errors.email) return res.status(400).json({ error: errors.email })
-        if (errors.password) return res.status(400).json({ error: errors.password })
 
-        console.log("Logging in user with email:", email)
+// ---- Utils ----
 
-        try {
-            const token = await UserService.login({ email, password })
-            return res.status(200).json({ token })
-        } catch (error) {
-            return res.status(400).json({ error: error.message })
-        }
-    }
+function validateUserParams(email, password) {
+	if (!email?.trim())
+		throw new BadRequestException("Email required");
+
+	if (!password?.trim())
+		throw new BadRequestException("'Password required'");
 }
